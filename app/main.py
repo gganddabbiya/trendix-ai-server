@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from account.adapter.input.web.account_router import account_router
+from content.adapter.input.web.chat_router import chat_router
 from content.adapter.input.web.ingestion_router import ingestion_router
 from content.adapter.input.web.topic_router import topic_router
 from content.adapter.input.web.trend_router import trend_router
@@ -59,6 +60,7 @@ app.add_middleware(
 )
 
 app.include_router(account_router, prefix="/accounts")
+app.include_router(chat_router)
 app.include_router(authentication_router, prefix="/authentication")
 app.include_router(ingestion_router, prefix="/ingestion")
 app.include_router(topic_router, prefix="/topics")

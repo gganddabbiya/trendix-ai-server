@@ -8,7 +8,8 @@ load_dotenv()
 @dataclass
 class OpenAISettings:
     api_key: str = os.getenv("OPENAI_API_KEY", "")
-    model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    # 기본 모델을 공개/일반 사용 가능한 gpt-4o로 설정
+    model: str = os.getenv("OPENAI_MODEL", "gpt-4o")
 
 
 @dataclass
