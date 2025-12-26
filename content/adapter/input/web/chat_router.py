@@ -40,7 +40,6 @@ async def chat_stream(request_body: ChatRequest, request: Request):  # ⭐ Reque
 
     async def event_generator():
         try:
-            # ⭐ conversationId 전송 (있는 경우)
             if request_body.conversationId:
                 yield f"data: {json.dumps({'conversationId': request_body.conversationId})}\n\n"
 
@@ -51,16 +50,16 @@ async def chat_stream(request_body: ChatRequest, request: Request):  # ⭐ Reque
             )
 
             for chunk in stream:
-                # ⭐ 클라이언트 연결 종료 확인
                 if await request.is_disconnected():
-                    print(f"Client disconnected, stopping stream for conversation: {request_body.conversationId}")
                     break
 
                 delta = (chunk.choices[0].delta.content or "") if chunk.choices else ""
                 if delta:
-                    yield f"data: {delta}\n\n"
+                    # ⭐ 이전 소스처럼 JSON으로 감싸서 보냅니다.
+                    # content 안의 줄바꿈(\n)이 문자열로 안전하게 인코딩됩니다.
+                    data = f"data: {json.dumps({'content': delta}, ensure_ascii=False)}\n\n"
+                    yield data
 
-                # ⭐ 이벤트 루프에 제어권 반환 (연결 종료 감지를 위해)
                 await asyncio.sleep(0)
 
             yield "data: [DONE]\n\n"
