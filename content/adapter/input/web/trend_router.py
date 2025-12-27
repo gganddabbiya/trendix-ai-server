@@ -79,3 +79,4 @@ async def get_featured_trends(
     if not result["popular"] and not result["rising"]:
         raise HTTPException(status_code=404, detail="추천할 데이터가 없습니다.")
     return JSONResponse(jsonable_encoder(result))
+
