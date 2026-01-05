@@ -10,23 +10,27 @@ from content.application.usecase.stopword_usecase import StopwordUseCase
 
 class StopwordMiddleware(BaseHTTPMiddleware):
 
-    __instance = None
-    _usecase = None
+    # __instance = None
+    # _usecase = None
 
-    def __new__(cls, app, *args, **kwargs):
-        if cls.__instance is None:
-            cls.__instance = super().__new__(cls)
-            repo = StopwordRepositoryImpl.getInstance()
-            if repo is None:
-               raise RuntimeError("StopwordRepositoryImpl.getInstance() returned None")
-            cls._usecase = StopwordUseCase(repo, lang="ko")
-        return cls.__instance
+    # def __new__(cls, app, *args, **kwargs):
+    #     if cls.__instance is None:
+    #         cls.__instance = super().__new__(cls)
+    #         repo = StopwordRepositoryImpl.getInstance()
+    #         if repo is None:
+    #            raise RuntimeError("StopwordRepositoryImpl.getInstance() returned None")
+    #         cls._usecase = StopwordUseCase(repo, lang="ko")
+    #     return cls.__instance
     
-    def __init__(self, app):
-        super().__init__(app)
+    # def __init__(self, app):
+    #     super().__init__(app)
 
     
     async def dispatch(self, request: Request, call_next):
+
+        repo = StopwordRepositoryImpl()  # getInstance() 제거
+        usecase = StopwordUseCase(repo, lang="ko")
+
         try:
             if request.method in ("POST", "PUT"):
                 content_type = request.headers.get("content-type", "")
@@ -40,8 +44,9 @@ class StopwordMiddleware(BaseHTTPMiddleware):
                         # Request를 새로 만들어 body 수정
                         body = body_bytes.decode("utf-8")
                         json_body = json.loads(body)
-                        cleaned_body = self._usecase.remove_stopwords_iterative(json_body)
+                        cleaned_body = usecase.remove_stopwords_iterative(json_body)
                         request.state.cleaned_body = cleaned_body
+                        print(f"Middleware cleaned: {cleaned_body}") 
 
                     except (json.JSONDecodeError, UnicodeDecodeError) as e:
                         print(f"JSON/UTF-8 decode error: {e}")
