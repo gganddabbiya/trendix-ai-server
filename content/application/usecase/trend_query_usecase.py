@@ -57,6 +57,22 @@ class TrendQueryUseCase:
             category_id=category_id, limit=limit, platform=platform, days=days
         )
 
+    def get_video_view_history(
+        self,
+        video_id: str,
+        platform: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict]:
+        """
+        단일 영상의 일자별(view_count, like_count, comment_count) 히스토리를 조회한다.
+        - snapshot_date 내림차순으로 정렬
+        """
+        return self.repository.fetch_video_view_history(
+            video_id=video_id,
+            platform=platform,
+            limit=limit,
+        )
+
     def get_video_snapshot_history(
             self, video_id: str, platform: str = "youtube", days: int = 7
     ) -> list[dict]:
