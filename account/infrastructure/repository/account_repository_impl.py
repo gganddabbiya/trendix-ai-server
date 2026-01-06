@@ -1,6 +1,7 @@
 from typing import List, Optional
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError, InvalidRequestError, PendingRollbackError, OperationalError
 from sqlalchemy.orm import Session
 from account.application.port.account_repository_port import AccountRepositoryPort
 from account.domain.account import Account
@@ -13,7 +14,18 @@ class AccountRepositoryImpl(AccountRepositoryPort):
     def __init__(self):
         self.db: Session = get_db_session()
 
+    def _ensure_session(self):
+        """세션이 유효하지 않으면 재생성"""
+        try:
+            # 세션 상태 확인을 위해 간단한 쿼리 시도
+            self.db.execute(text("SELECT 1"))
+        except (InvalidRequestError, PendingRollbackError, OperationalError):
+            # 세션이 invalid 상태거나 연결이 끊어진 경우, 새 세션 생성
+            # (기존 세션 정리는 GC가 처리)
+            self.db = get_db_session()
+
     def save(self, account: Account) -> Account:
+        self._ensure_session()
         orm_account = AccountORM(
             email=account.email,
             nickname=account.nickname,
@@ -29,6 +41,7 @@ class AccountRepositoryImpl(AccountRepositoryPort):
         return self._to_domain(orm_account)
 
     def update(self, account: Account) -> Account:
+        self._ensure_session()
         orm_account: Optional[AccountORM] = self.db.get(AccountORM, account.id)
         if orm_account is None:
             raise ValueError(f"Account id={account.id} not found")
@@ -42,25 +55,30 @@ class AccountRepositoryImpl(AccountRepositoryPort):
         return self._to_domain(orm_account)
 
     def find_by_id(self, account_id: int) -> Account | None:
+        self._ensure_session()
         orm_account = self.db.get(AccountORM, account_id)
         if orm_account is None:
             return None
         return self._to_domain(orm_account)
 
     def find_by_email(self, email: str) -> Account | None:
+        self._ensure_session()
         orm_account = self.db.query(AccountORM).filter(AccountORM.email == email).first()
         if orm_account is None:
             return None
         return self._to_domain(orm_account)
 
     def find_all_by_id(self, ids: list[int]) -> List[Account]:
+        self._ensure_session()
         orm_accounts = self.db.query(AccountORM).filter(AccountORM.id.in_(ids)).all()
         return [self._to_domain(o) for o in orm_accounts]
 
     def count(self) -> int:
+        self._ensure_session()
         return self.db.query(AccountORM).count()
 
     def add_interest(self, interest: AccountInterest) -> AccountInterest:
+        self._ensure_session()
         orm = AccountInterestORM(account_id=interest.account_id, interest=interest.interest)
         self.db.add(orm)
         try:
@@ -82,6 +100,7 @@ class AccountRepositoryImpl(AccountRepositoryPort):
         return self._interest_to_domain(orm)
 
     def delete_interest(self, account_id: int, interest_id: int) -> None:
+        self._ensure_session()
         self.db.query(AccountInterestORM).filter(
             AccountInterestORM.account_id == account_id,
             AccountInterestORM.id == interest_id,
@@ -89,6 +108,7 @@ class AccountRepositoryImpl(AccountRepositoryPort):
         self.db.commit()
 
     def list_interests(self, account_id: int) -> List[AccountInterest]:
+        self._ensure_session()
         interests = (
             self.db.query(AccountInterestORM)
             .filter(AccountInterestORM.account_id == account_id)
