@@ -151,10 +151,11 @@ async def get_video_snapshot_history(
 ):
     """
     특정 영상의 스냅샷 히스토리를 조회하여 추이 차트 데이터를 제공한다.
-    
+    스냅샷이 없는 경우 현재 video 데이터를 반환한다.
+
     - 요청 예시:
       /trends/videos/abc123/history?days=7&platform=youtube
-      
+
     - 응답:
       { "items": [ { snapshot_date, view_count, like_count, comment_count, daily_*_increase }, ... ] }
     """
@@ -163,7 +164,6 @@ async def get_video_snapshot_history(
         platform=platform,
         days=days,
     )
-    if not items:
-        raise HTTPException(status_code=404, detail="스냅샷 히스토리가 없습니다.")
+    # 빈 배열도 허용 (프론트엔드에서 처리)
     return JSONResponse(jsonable_encoder({"video_id": video_id, "items": items}))
 
