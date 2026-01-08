@@ -86,6 +86,28 @@ class StopwordUseCase:
         result = re.sub(pattern, '', text)
         print(f"texts={text}, result={result}")
         return result
+    
+    def filter_stopwords(self, text: str) -> str:
+        """
+        불용어(욕설 등)를 '**' 로 치환.
+        DB에 저장된 stopwords 집합을 그대로 사용.
+        """
+        if not text:
+            return ""
+
+        escaped_stopwords = [re.escape(word) for word in self.stopwords]
+        if not escaped_stopwords:
+            return text
+
+        pattern = "|".join(escaped_stopwords)
+
+        def _replace(match: re.Match) -> str:
+            # 길이와 상관없이 ** 로 고정 치환
+            return "**"
+
+        filtered = re.sub(pattern, _replace, text)
+        print(f"texts={text}, filtered={filtered}")
+        return filtered
 
     def preprocess(self, text: str) -> str:
         """

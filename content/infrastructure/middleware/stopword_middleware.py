@@ -10,23 +10,11 @@ from content.application.usecase.stopword_usecase import StopwordUseCase
 
 class StopwordMiddleware(BaseHTTPMiddleware):
 
-    __instance = None
-    _usecase = None
-
-    def __new__(cls, app, *args, **kwargs):
-        if cls.__instance is None:
-            cls.__instance = super().__new__(cls)
-            repo = StopwordRepositoryImpl.getInstance()
-            if repo is None:
-               raise RuntimeError("StopwordRepositoryImpl.getInstance() returned None")
-            cls._usecase = StopwordUseCase(repo, lang="ko")
-        return cls.__instance
-    
-    def __init__(self, app):
-        super().__init__(app)
-
-    
     async def dispatch(self, request: Request, call_next):
+
+        repo = StopwordRepositoryImpl()  # getInstance() 제거
+        usecase = StopwordUseCase(repo, lang="ko")
+
         try:
             if request.method in ("POST", "PUT"):
                 content_type = request.headers.get("content-type", "")
